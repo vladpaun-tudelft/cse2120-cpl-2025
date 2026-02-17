@@ -1,26 +1,32 @@
 object Interpret {
 
+  private def numBinOp(l: ExprC, r: ExprC)(op: (Int, Int) => Int): Value =
+    NumV(op(asNum(interp(l)), asNum(interp(r))))
+
+  private def numCmpOp(l: ExprC, r: ExprC)(op: (Int, Int) => Boolean): Value =
+    BoolV(op(asNum(interp(l)), asNum(interp(r))))
+
   def interp(e: ExprC): Value = e match {
-    case NumC(value: Int) => NumV(value)
+    case NumC(value) => NumV(value)
     case TrueC() => BoolV(true)
     case FalseC() => BoolV(false)
 
-    case AddC(l: ExprC, r: ExprC) => NumV(asNum(interp(l)) + asNum(interp(r)))
-    case MulC(l: ExprC, r: ExprC) => NumV(asNum(interp(l)) * asNum(interp(r)))
+    case AddC(l, r) => numBinOp(l, r)(_ + _)
+    case MulC(l, r) => numBinOp(l, r)(_ * _)
 
-    case EqNumC(l: ExprC, r: ExprC) => BoolV(asNum(interp(l)) == asNum(interp(r)))
-    case LtNumC(l: ExprC, r: ExprC) => BoolV(asNum(interp(l)) < asNum(interp(r)))
+    case EqNumC(l, r) => numCmpOp(l, r)(_ == _)
+    case LtNumC(l, r) => numCmpOp(l, r)(_ < _)
 
-    case IfC(c: ExprC, t: ExprC, f: ExprC) => if asBool(interp(c)) then interp(t) else interp(f)
+    case IfC(c, t, f) => if asBool(interp(c)) then interp(t) else interp(f)
     case UndefinedC() => throw InterpException("Undefined behavior")
 
     case NilC() => NilV()
-    case ConsC(head: ExprC, tail: ExprC) => ConsV(interp(head), interp(tail))
+    case ConsC(head, tail) => ConsV(interp(head), interp(tail))
 
-    case HeadC(e: ExprC) => head(interp(e))
-    case TailC(e: ExprC) => tail(interp(e))
-    case IsNilC(e: ExprC) => BoolV(isNil(interp(e)))
-    case IsListC(e: ExprC) => BoolV(isList(interp(e)))
+    case HeadC(e) => head(interp(e))
+    case TailC(e) => tail(interp(e))
+    case IsNilC(e) => BoolV(isNil(interp(e)))
+    case IsListC(e) => BoolV(isList(interp(e)))
   }
 
   def asNum(v: Value): Int = v match {

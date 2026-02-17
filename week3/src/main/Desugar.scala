@@ -1,40 +1,40 @@
 object Desugar {
 
   def desugar(e: ExprExt): ExprC = e match {
-    case NumExt(value: Int) => NumC(value)
+    case NumExt(value) => NumC(value)
     case TrueExt() => TrueC()
     case FalseExt() => FalseC()
 
-    case NegExt(e: ExprExt) => MulC(NumC(-1), desugar(e))
-    case AddExt(l: ExprExt, r: ExprExt) => AddC(desugar(l), desugar(r))
-    case SubExt(l: ExprExt, r: ExprExt) => AddC(desugar(l), MulC(NumC(-1), desugar(r)))
-    case MulExt(l: ExprExt, r: ExprExt) => MulC(desugar(l), desugar(r))
+    case NegExt(e) => MulC(NumC(-1), desugar(e))
+    case AddExt(l, r) => AddC(desugar(l), desugar(r))
+    case SubExt(l, r) => AddC(desugar(l), MulC(NumC(-1), desugar(r)))
+    case MulExt(l, r) => MulC(desugar(l), desugar(r))
 
-    case EqNumExt(l: ExprExt, r: ExprExt) => EqNumC(desugar(l), desugar(r))
-    case LtNumExt(l: ExprExt, r: ExprExt) => LtNumC(desugar(l), desugar(r))
-    case GtNumExt(l: ExprExt, r: ExprExt) => LtNumC(desugar(r), desugar(l))
+    case EqNumExt(l, r) => EqNumC(desugar(l), desugar(r))
+    case LtNumExt(l, r) => LtNumC(desugar(l), desugar(r))
+    case GtNumExt(l, r) => LtNumC(desugar(r), desugar(l))
 
-    case NotExt(e: ExprExt) => IfC(desugar(e), FalseC(), TrueC())
-    case AndExt(l: ExprExt, r: ExprExt) => IfC(desugar(l), desugar(r), FalseC())
-    case OrExt(l: ExprExt, r: ExprExt) => IfC(desugar(l), TrueC(), desugar(r))
+    case NotExt(e) => IfC(desugar(e), FalseC(), TrueC())
+    case AndExt(l, r) => IfC(desugar(l), desugar(r), FalseC())
+    case OrExt(l, r) => IfC(desugar(l), TrueC(), desugar(r))
 
-    case IfExt(c: ExprExt, t: ExprExt, f: ExprExt) => IfC(desugar(c), desugar(t), desugar(f))
+    case IfExt(c, t, f) => IfC(desugar(c), desugar(t), desugar(f))
     case CondExt(branches: List[CondBranch]) =>
       branches.foldRight(UndefinedC(): ExprC) {
-        case (CondBranch(c, branchExpr), tail) => IfC(desugar(c), desugar(branchExpr), tail)
+        case (CondBranch(c, b), tail) => IfC(desugar(c), desugar(b), tail)
       }
-    case CondEExt(branches: List[CondBranch], e: ExprExt) =>
+    case CondEExt(branches, e) =>
       branches.foldRight(desugar(e)) {
-        case (CondBranch(c, branchExpr), tail) => IfC(desugar(c), desugar(branchExpr), tail)
+        case (CondBranch(c, b), tail) => IfC(desugar(c), desugar(b), tail)
       }
 
     case NilExt() => NilC()
-    case ConsExt(head: ExprExt, tail: ExprExt) => ConsC(desugar(head), desugar(tail))
-    case ListExt(values: List[ExprExt]) => values.map(desugar).foldRight(NilC(): ExprC)(ConsC.apply)
+    case ConsExt(head, tail) => ConsC(desugar(head), desugar(tail))
+    case ListExt(values) => values.map(desugar).foldRight(NilC(): ExprC)(ConsC.apply)
 
-    case HeadExt(e: ExprExt) => HeadC(desugar(e))
-    case TailExt(e: ExprExt) => TailC(desugar(e))
-    case IsNilExt(e: ExprExt) => IsNilC(desugar(e))
-    case IsListExt(e: ExprExt) => IsListC(desugar(e))
+    case HeadExt(e) => HeadC(desugar(e))
+    case TailExt(e) => TailC(desugar(e))
+    case IsNilExt(e) => IsNilC(desugar(e))
+    case IsListExt(e) => IsListC(desugar(e))
   }
 }
