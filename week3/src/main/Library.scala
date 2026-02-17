@@ -31,6 +31,12 @@ case class TailExt(e: ExprExt) extends ExprExt
 case class IsNilExt(e: ExprExt) extends ExprExt
 case class IsListExt(e: ExprExt) extends ExprExt
 
+case class IdExt(name: String) extends ExprExt
+case class LambdaExt(params: List[String], body: ExprExt) extends ExprExt
+case class AppExt(callee: ExprExt, args: List[ExprExt]) extends ExprExt
+case class LetExt(binds: List[LetBind], body: ExprExt) extends ExprExt
+case class LetBind(name: String, value: ExprExt)
+
 trait ExprC
 
 case class NumC(value: Int) extends ExprC
@@ -54,13 +60,21 @@ case class TailC(e: ExprC) extends ExprC
 case class IsNilC(e: ExprC) extends ExprC
 case class IsListC(e: ExprC) extends ExprC
 
+case class IdC(name: String) extends ExprC
+case class LambdaC(params: List[String], body: ExprC) extends ExprC
+case class AppC(callee: ExprC, args: List[ExprC]) extends ExprC
+
 trait Value
 
 case class NumV(value: Int) extends Value
 case class BoolV(value: Boolean) extends Value
 
+case class ClosureV(f: LambdaC, nv: Environment) extends Value
+
 sealed trait ListV extends Value
 case class NilV() extends ListV
 case class ConsV(head: Value, tail: Value) extends ListV
+
+type Environment = List[(String, Value)]
 
 case class InterpException(message: String) extends RuntimeException(message)
