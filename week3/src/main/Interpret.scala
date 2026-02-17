@@ -1,11 +1,5 @@
 object Interpret {
 
-  private def numBinOp(l: ExprC, r: ExprC)(op: (Int, Int) => Int): Value =
-    NumV(op(asNum(interp(l)), asNum(interp(r))))
-
-  private def numCmpOp(l: ExprC, r: ExprC)(op: (Int, Int) => Boolean): Value =
-    BoolV(op(asNum(interp(l)), asNum(interp(r))))
-
   def interp(e: ExprC): Value = e match {
     case NumC(value) => NumV(value)
     case TrueC() => BoolV(true)
@@ -29,35 +23,38 @@ object Interpret {
     case IsListC(e) => BoolV(isList(interp(e)))
   }
 
-  def asNum(v: Value): Int = v match {
+  private def asNum(v: Value): Int = v match {
     case NumV(n) => n
     case _ => throw InterpException("Not a number")
   }
 
-  def asBool(v: Value): Boolean = v match {
+  private def asBool(v: Value): Boolean = v match {
     case BoolV(b) => b
     case _ => throw InterpException("Not a boolean")
   }
 
-  def head(v: Value): Value = v match {
+  private def head(v: Value): Value = v match {
     case ConsV(h, _) => h
     case _ => throw InterpException("Expected a Cons")
   }
 
-  def tail(v: Value): Value = v match {
+  private def tail(v: Value): Value = v match {
     case ConsV(_, t) => t
     case _ => throw InterpException("Expected a Cons")
   }
 
-  def isNil(v: Value): Boolean = v match {
+  private def isNil(v: Value): Boolean = v match {
     case NilV() => true
     case ConsV(_, _) => false
     case _ => throw InterpException("Not a list")
   }
 
-  def isList(v: Value): Boolean = v match {
+  private def isList(v: Value): Boolean = v match {
     case NilV() => true
     case ConsV(_, _) => true
     case _ => false
   }
+
+  private def numBinOp(l: ExprC, r: ExprC)(op: (Int, Int) => Int): Value = NumV(op(asNum(interp(l)), asNum(interp(r))))
+  private def numCmpOp(l: ExprC, r: ExprC)(op: (Int, Int) => Boolean): Value = BoolV(op(asNum(interp(l)), asNum(interp(r))))
 }
