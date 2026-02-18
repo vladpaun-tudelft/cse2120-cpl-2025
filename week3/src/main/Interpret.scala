@@ -1,4 +1,3 @@
-
 object Interpret {
 
   def interp(e: ExprC, nv: Environment): Value = e match {
@@ -22,6 +21,15 @@ object Interpret {
     case TailC(e) => tail(interp(e,nv))
     case IsNilC(e) => isNil(interp(e,nv))
     case IsListC(e) => isList(interp(e,nv))
+
+    case IdC(name) => take(nv,name)
+    case f:LambdaC => ClosureV(f,nv)
+    case AppC(calee, args) => interp(calee,nv) match {
+      case ClosureV(LambdaC(params, body), oldNv) =>
+        if params.length != args.length then throw InterpException("Mismatch in params and args")
+        else interp(body, params.zip(args.map(a => interp(a,nv))) ++ oldNv)
+      case _ => throw InterpException("Attempted to call smth that is not a function")
+    }
   }
 
   private def asNum(v: Value): Int = v match {
@@ -57,4 +65,10 @@ object Interpret {
 
   private def numBinOp(l: ExprC, r: ExprC, nv: Environment)(op: (Int, Int) => Int): Value = NumV(op(asNum(interp(l,nv)), asNum(interp(r,nv))))
   private def numCmpOp(l: ExprC, r: ExprC, nv: Environment)(op: (Int, Int) => Boolean): Value = BoolV(op(asNum(interp(l,nv)), asNum(interp(r,nv))))
+
+  def add(myEnv: Environment, name: String, value : Value): Environment = (name, value) :: myEnv
+  def take(myEnv: Environment, name: String): Value = myEnv.collectFirst { case (`name`, value) => value }.getOrElse(throw MissingBindingException())
+  def update(myEnv: Environment, otherEnv: Environment): Environment = myEnv.map {case (name, value) => (name, otherEnv.find(_._1 == name).map(_._2).getOrElse(value))}
+  def extend(myEnv: Environment, otherEnv: Environment): Environment = myEnv ++ otherEnv.filter {case (name, _) => !myEnv.exists(_._1 == name)}
+  case class MissingBindingException() extends InterpException("No matching binding was found in the environmnet")
 }

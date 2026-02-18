@@ -1,3 +1,4 @@
+
 object Desugar {
 
   def desugar(e: ExprExt): ExprC = e match {
@@ -36,5 +37,10 @@ object Desugar {
     case TailExt(e) => TailC(desugar(e))
     case IsNilExt(e) => IsNilC(desugar(e))
     case IsListExt(e) => IsListC(desugar(e))
+
+    case IdExt(name) => IdC(name)
+    case LambdaExt(params, body) => LambdaC(params, desugar(body))
+    case AppExt(callee, args) => AppC(desugar(callee), args.map(desugar))
+    case LetExt(binds, body) => AppC(LambdaC(binds.map(_.name), desugar(body)),binds.map(b => desugar(b.value)))
   }
 }
