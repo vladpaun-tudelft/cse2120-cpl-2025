@@ -12,7 +12,7 @@ object Desugar {
 
         case EqNumExt(l, r) => EqNumC(desugar(l), desugar(r))
         case LtNumExt(l, r) => LtNumC(desugar(l), desugar(r))
-        case GtNumExt(l, r) => LtNumC(desugar(r), desugar(l))
+        case GtNumExt(l, r) => AppC(LambdaC(List("x","y"),LtNumC(IdC("y"),IdC("x"))),List(desugar(l),desugar(r)))
 
         case NotExt(e) => IfC(desugar(e), FalseC(), TrueC())
         case AndExt(l, r) => IfC(desugar(l), desugar(r), FalseC())
@@ -44,7 +44,7 @@ object Desugar {
     
         case SetExt(name, value) => SetC(name, desugar(value))
         case SequenceExt(exprs) => exprs.map(desugar).reduceRight(SeqC.apply)
-        case LetRecExt(binds, body) => AppC(LambdaC(binds.map(_.name), binds.map(b => SetC(b.name, desugar(b.value))).foldRight(desugar(body): ExprC)(SeqC.apply: ExprC)), binds.map(_ => UninitialisedC()))
+        case LetRecExt(binds, body) => AppC(LambdaC(binds.map(_.name), binds.map(b => SetC(b.name, desugar(b.value))).foldRight(desugar(body): ExprC)(SeqC.apply)), binds.map(_ => UninitialisedC()))
 
         case BoxExt(e) => BoxC(desugar(e))
         case UnboxExt(b) => UnboxC(desugar(b))

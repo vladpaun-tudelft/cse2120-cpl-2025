@@ -1,3 +1,4 @@
+
 object Interpret {
 
   def interp(e: ExprC, nv: PointerEnvironment, st: Store): (Value, Store) = e match {
@@ -45,27 +46,63 @@ object Interpret {
       }
 
       case IdC(name) => (fetch(lookup(name, nv),st), st)
-      case f:LambdaC => PointerClosureV(f,nv)
-      case AppC(callee: ExprC, args: List[ExprC]) => {
-        val (fv, st2) = interp(callee,nv,st)
-        fv match {
-          case PointerClosureV(LambdaC(params:List[String], body), enclosedEnv) => {
-              //maybe check arity of params and args
+      case f:LambdaC => (PointerClosureV(f,nv),st)
+      case AppC(func, argExprs) =>
+        val (funcVal, store2) = interp(func, nv, st)
+        funcVal match {
+          case PointerClosureV(LambdaC(paramNames, bodyExpr), closureEnv) =>
+            val (evaluatedArgs, storeAfterArgs) =
+              argExprs.foldLeft((List.empty[Value], store2)) {
+                case ((argValuesSoFar, currentStore), argExpr) =>
+                  val (argValue, updatedStore) = interp(argExpr, nv, currentStore)
+                  (argValuesSoFar :+ argValue, updatedStore)
+              }
 
-              //interpret all args
-              val (interpedArg, st3) = interp(arg, nv, st2);
-              
-              //enclose all params
-              val newPointer = newLoc(st2)
-              val extendedEnv = (param, newPointer) :: enclosedEnv
-              val extendedStore = extendStore((newPointer, interpedArg), st3)
+            val (extendedClosureEnv, storeAfterParamBinding) =
+              paramNames.zip(evaluatedArgs).foldLeft((closureEnv, storeAfterArgs)) {
+                case ((envSoFar, currentStore), (paramName, argValue)) =>
+                  val newLocation = newLoc(currentStore)
+                  val updatedEnv = (paramName, newLocation) :: envSoFar
+                  val updatedStore = extendStore((newLocation, argValue), currentStore)
+                  (updatedEnv, updatedStore)
+              }
 
-              //interpret body
-              interp(body, extendedEnv, extendedStore)
-          }
-          case _ => throw InterpException("")
+            interp(bodyExpr, extendedClosureEnv, storeAfterParamBinding)
+
+          case _ =>
+            throw InterpException("Attempted to call a non-function")
+      }
+
+      case SetC(name, value) => {
+        val (v, st2) = interp(value, nv, st)
+        (v,update(lookup(name, nv),st2,v))
+      }
+      case SeqC(first, second) => interp(second,nv,interp(first,nv,st)._2)
+      case UninitialisedC() => (UninitialisedV(), st)
+
+      case BoxC(e) => {
+        val (v,st2) = interp(e,nv,st)
+        val loc = newLoc(st2)
+        (BoxV(loc),extendStore((loc,v),st2))
+      }
+      case UnboxC(b) => {
+        val (bv, st2) = interp(b,nv,st)
+        bv match {
+          case BoxV(loc) => (fetch(loc, st2), st2)
+          case _ => throw InterpException("pissballs")
         }
       }
+      case SetBoxC(b,e) => {
+        val (bv, st2) = interp(b,nv,st)
+        bv match {
+          case BoxV(loc) => {
+            val (v, st3) = interp(e,nv,st2)
+            (v,update(loc,st3,v))
+          }
+          case _ => throw InterpException("sssss")
+        }
+      }
+
   }
 
   private def asNum(v: Value): Int = v match {
@@ -109,11 +146,6 @@ object Interpret {
     val (rv, st3) = interp(r, nv, st2)
     (BoolV(op(asNum(lv), asNum(rv))), st3)
   }
-
-  def add(myEnv: PointerEnvironment, name: String, value : Value): PointerEnvironment = (name, value) :: myEnv
-  def take(myEnv: PointerEnvironment, name: String): Value = myEnv.collectFirst { case (`name`, value) => value }.getOrElse(throw MissingBindingException())
- 
-  case class MissingBindingException() extends InterpException("No matching binding was found in the environmnet")
   
   def lookup(name: String, nv: PointerEnvironment): Pointer = nv.collectFirst {case (`name`, value) => value}.getOrElse(throw InterpException("goo goo gaa gaa"))
   def update(loc: Pointer, st: Store, v: Value): Store = st.updated(if st.indexWhere((p,_) => p == loc) == -1 then throw InterpException("") else st.indexWhere((p,_) => p == loc), (loc,v))
