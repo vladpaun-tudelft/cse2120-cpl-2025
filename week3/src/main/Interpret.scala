@@ -70,5 +70,5 @@ object Interpret {
   def take(myEnv: Environment, name: String): Value = myEnv.collectFirst { case (`name`, value) => value }.getOrElse(throw MissingBindingException())
   def update(myEnv: Environment, otherEnv: Environment): Environment = myEnv.map {case (name, value) => (name, otherEnv.find(_._1 == name).map(_._2).getOrElse(value))}
   def extend(myEnv: Environment, otherEnv: Environment): Environment = myEnv ++ otherEnv.filter {case (name, _) => !myEnv.exists(_._1 == name)}
-  case class MissingBindingException() extends InterpException("No matching binding was found in the environmnet")
+  class MissingBindingException extends InterpException("No matching binding was found in the environmnet")
 }
