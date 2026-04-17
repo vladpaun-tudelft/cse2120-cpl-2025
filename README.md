@@ -1,5 +1,8 @@
 # cse2120-cpl-2025
 
+> **Archived repository**  
+> Personal archive of my TU Delft CSE2120 coursework. This repo is not maintained and is kept for reference only.
+
 Local Scala workspace for TU Delft CSE2120 (Concepts of Programming Languages) assignments.
 
 This repo is organized as a set of independent sbt subprojects, one per assignment stage. Each `week*` folder contains its own AST, desugarer, interpreter, and tests. The projects are intentionally separate because the language grows week by week and the runtime model changes across assignments.
